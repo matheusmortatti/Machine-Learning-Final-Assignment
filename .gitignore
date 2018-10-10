@@ -1,0 +1,3 @@
+#Ignores imported packages
+gym/
+gym-sokoban/
