@@ -2,12 +2,13 @@ import gym
 import gym_sokoban
 import numpy as np
 import time
+from hashlib import sha1
 
 import random
 from IPython.display import clear_output
 
 def map_np(a):
-    return hash(str(a))
+    return str(a)
 
 env = gym.make("Sokoban-small-v0")
 q_table = {}
@@ -21,7 +22,7 @@ epsilon = 0.1
 all_epochs = []
 all_penalties = []
 
-for i in range(0, 1000):
+for i in range(0, 10):
     state = env.reset()
 
     epochs, penalties, reward, = 0, 0, 0
@@ -44,11 +45,21 @@ for i in range(0, 1000):
         new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
         q_table[map_np(state)][action] = new_value
 
-        # env.render("human")
+        env.render("human")
         # time.sleep(.01)
 
         if reward < 0:
             penalties += 1
+
+        # tt = (state == next_state)
+        # res = True
+
+        # for i in range(tt.shape[0]):
+        #     for j in range(tt.shape[1]):
+        #         for k in range(tt.shape[2]):
+        #             res = res and tt[i,j,k]
+        # print("res: " + str(res))
+        # print(str(state.tolist())==str(next_state.tolist))
 
         state = next_state
 
@@ -56,7 +67,7 @@ for i in range(0, 1000):
         
     print("Episode: " + str(i))
 
-print(q_table)
+# print(q_table)
 
 print("Training finished.\n")
 
@@ -70,15 +81,26 @@ for _ in range(episodes):
     done = False
     
     while not done:
-        action = np.argmax(q_table[state])
+        action = np.argmax(q_table[map_np(state)])
 
-        state, reward, done, info = env.step(action)
+        next_state, reward, done, info = env.step(action)
 
         if reward < 0:
             penalties += 1
 
         epochs += 1
         env.render(mode="human")
+
+        # tt = (state == next_state)
+        # res = True
+
+        # for i in range(tt.shape[0]):
+        #     for j in range(tt.shape[1]):
+        #         for k in range(tt.shape[2]):
+        #             res = res and tt[i,j,k]
+        # print(res)
+
+        state = next_state
 
     total_penalties += penalties
     total_epochs += epochs
