@@ -2,15 +2,16 @@ import gym
 import gym_sokoban
 import numpy as np
 import time
+import pickle
 from hashlib import sha1
 
 import random
 from IPython.display import clear_output
 
 def map_np(a):
-    return str(a)
+    return hash(np.ndarray.tostring(a))
 
-env = gym.make("Sokoban-small-v0")
+env = gym.make("PushAndPull-Sokoban-v2")
 q_table = {}
 
 # Hyperparameters
@@ -22,28 +23,45 @@ epsilon = 0.1
 all_epochs = []
 all_penalties = []
 
-for i in range(0, 10):
+try:
+    q_table = pickle.load(open('q_table.p', 'rb'))
+except FileNotFoundError:
+    pass
+
+episodes = 100000
+
+for i in range(episodes):
     state = env.reset()
 
     epochs, penalties, reward, = 0, 0, 0
     done = False
-    
+
+    #print(len(state))
+    #print(len(state[0]))
+    #print(len(state[0][0]))
+    #print(state)
+
     while not done:
-        if map_np(state) not in q_table:
-            q_table[map_np(state)] = np.zeros(env.action_space.n)
+        mapped_state = map_np(state)
+        if mapped_state not in q_table:
+            q_table[mapped_state] = np.zeros(env.action_space.n)
         if random.uniform(0, 1) < epsilon:
             action = env.action_space.sample() # Explore action space
         else:
-            action = np.argmax(q_table[map_np(state)]) # Exploit learned values
-        
+            action = np.argmax(q_table[mapped_state]) # Exploit learned values
+
 
         next_state, reward, done, info = env.step(action)
-        
-        old_value = q_table[map_np(state)][action]
-        next_max = np.max(q_table[map_np(next_state)])
-        
+        mapped_next_state = map_np(next_state)
+
+        old_value = q_table[mapped_state][action]
+
+        if mapped_next_state not in q_table:
+            q_table[mapped_next_state] = np.zeros(env.action_space.n)
+        next_max = np.max(q_table[mapped_next_state])
+
         new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
-        q_table[map_np(state)][action] = new_value
+        q_table[mapped_state][action] = new_value
 
         env.render("human")
         # time.sleep(.01)
@@ -64,24 +82,29 @@ for i in range(0, 10):
         state = next_state
 
         epochs += 1
-        
+
     print("Episode: " + str(i))
 
-# print(q_table)
+pickle.dump(q_table, open('q_table.p', 'wb'))
 
 print("Training finished.\n")
 
 total_epochs, total_penalties = 0, 0
-episodes = 10
 
+episodes = 100
 for _ in range(episodes):
     state = env.reset()
     epochs, penalties, reward = 0, 0, 0
-    
+
     done = False
-    
+
     while not done:
-        action = np.argmax(q_table[map_np(state)])
+        mapped_state = map_np(state)
+        if mapped_state not in q_table:
+            action = env.action_space.sample()
+            #q_table[mapped_state] = np.zeros(env.action_space.n)
+        else:
+            action = np.argmax(q_table[mapped_state])
 
         next_state, reward, done, info = env.step(action)
 
