@@ -1,3 +1,6 @@
 #Ignores imported packages
 gym/
 gym-sokoban/
+videos/
+models/
+tensorboard/
